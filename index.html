@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบคำนวณและติดตามเงินตกเบิกอัตโนมัติ - นักวิชาการสาธารณสุข</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Sarabun', sans-serif;
+            background-color: #fcfbf9;
+            color: #4a4a4a;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 100%;
+            height: 350px;
+            max-height: 400px;
+            margin: 0 auto;
+        }
+        .timeline-line {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 2px;
+            height: 100%;
+            background-color: #cbd5e1;
+            z-index: 0;
+        }
+        .timeline-point {
+            z-index: 10;
+            transition: all 0.3s ease;
+        }
+        .timeline-point:hover {
+            transform: scale(1.1);
+        }
+        .card-hover {
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .card-hover:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        .table-container::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        .table-container::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        .table-container::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        .table-container::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+        /* Tag Styles */
+        .tag-future {
+            background-color: #f1f5f9;
+            color: #64748b;
+            border: 1px dashed #cbd5e1;
+        }
+        .tag-past {
+            background-color: #dcfce7;
+            color: #166534;
+        }
+    </style>
+    <!-- Automatic Calculation Logic:
+         - Starts from Aug 2024 (2567).
+         - Logic: 
+            - Apr: +540 (Year 68), +720 (Year 69+)
+            - Oct: +0 (Year 67), +720 (Year 68+)
+            - May 68: Base jump to 25410
+         - Generates rows dynamically until Present + 12 Months.
+    -->
+</head>
+<body class="bg-[#fcfbf9] text-slate-700 pb-12">
+
+    <!-- Navbar -->
+    <nav class="bg-white shadow-sm border-b border-slate-200 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <span class="text-2xl font-bold text-slate-800">💰 ระบบคำนวณเงินตกเบิก (Auto)</span>
+                    <span class="ml-4 text-sm text-slate-500 hidden md:inline-block border-l pl-4 border-slate-300">ตำแหน่ง: นักวิชาการสาธารณสุข</span>
+                </div>
+                <div class="flex items-center">
+                    <span id="currentDateDisplay" class="text-sm font-semibold text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full"></span>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+
+        <!-- Introduction -->
+        <section class="bg-white rounded-xl p-6 shadow-sm border border-slate-100">
+            <h2 class="text-xl font-bold text-slate-800 mb-2">สถานะการคำนวณแบบ Real-time</h2>
+            <p class="text-slate-600 leading-relaxed">
+                ระบบกำลังคำนวณยอดเงินตกเบิกโดยอัตโนมัติตั้งแต่วันบรรจุ (9 ส.ค. 67) จนถึงเดือนปัจจุบัน และประมาณการล่วงหน้าให้อีก 12 เดือน 
+                โดยใช้ฐานเงินเดือน 16,500 บาทเป็นตัวตั้ง และคำนวณส่วนเพิ่มตามรอบการประเมิน (เม.ย./ต.ค.) และการปรับฐานวุฒิ ป.เอก โดยอัตโนมัติ
+            </p>
+        </section>
+
+        <!-- Hero Stats -->
+        <section class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <!-- Total Backpay -->
+            <div class="bg-gradient-to-br from-emerald-50 to-white p-6 rounded-xl shadow-sm border border-emerald-100 card-hover">
+                <div class="text-sm font-medium text-emerald-600 mb-1">ยอดตกเบิกสุทธิ (ถึงปัจจุบัน)</div>
+                <div class="text-4xl font-bold text-emerald-700" id="totalBackpayDisplay">...</div>
+                <div class="text-xs text-emerald-500 mt-2" id="backpayRangeDisplay">คำนวณถึงเดือนนี้</div>
+            </div>
+
+            <!-- Current Gap -->
+            <div class="bg-gradient-to-br from-amber-50 to-white p-6 rounded-xl shadow-sm border border-amber-100 card-hover">
+                <div class="text-sm font-medium text-amber-600 mb-1">ส่วนต่างรายเดือนปัจจุบัน</div>
+                <div class="text-4xl font-bold text-amber-700" id="currentGapDisplay">...</div>
+                <div class="text-xs text-amber-500 mt-2">ส่วนต่างที่ควรได้รับเพิ่มในเดือนนี้</div>
+            </div>
+
+            <!-- Current Should Be -->
+            <div class="bg-gradient-to-br from-slate-50 to-white p-6 rounded-xl shadow-sm border border-slate-100 card-hover">
+                <div class="text-sm font-medium text-slate-600 mb-1">เงินเดือนที่ควรได้รับจริง</div>
+                <div class="text-4xl font-bold text-slate-700" id="currentSalaryDisplay">...</div>
+                <div class="text-xs text-slate-500 mt-2">ฐาน ป.เอก + เลื่อนขั้นสะสม</div>
+            </div>
+        </section>
+
+        <!-- Charts Section -->
+        <section class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Monthly Comparison Chart -->
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
+                <h3 class="text-lg font-bold text-slate-800 mb-4 flex items-center">
+                    <span class="bg-blue-100 text-blue-600 p-1.5 rounded-lg mr-2 text-sm">📊</span> 
+                    แนวโน้มรายรับ vs ที่ควรได้ (รวมอนาคต)
+                </h3>
+                <div class="chart-container">
+                    <canvas id="salaryComparisonChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Cumulative Backpay Chart -->
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
+                <h3 class="text-lg font-bold text-slate-800 mb-4 flex items-center">
+                    <span class="bg-emerald-100 text-emerald-600 p-1.5 rounded-lg mr-2 text-sm">📈</span>
+                    การเติบโตของเงินตกเบิกสะสม
+                </h3>
+                <div class="chart-container">
+                    <canvas id="cumulativeBackpayChart"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <!-- Timeline & Interaction -->
+        <section class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Timeline Column -->
+            <div class="lg:col-span-1 bg-white p-6 rounded-xl shadow-sm border border-slate-100 h-fit">
+                <h3 class="text-lg font-bold text-slate-800 mb-6">ไทม์ไลน์การเปลี่ยนแปลง</h3>
+                <div class="relative space-y-0" id="timelineContainer">
+                    <div class="timeline-line bg-slate-200"></div>
+                    <!-- Timeline items generated by JS -->
+                </div>
+            </div>
+
+            <!-- Detailed Table Column -->
+            <div class="lg:col-span-2 bg-white p-6 rounded-xl shadow-sm border border-slate-100 flex flex-col">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-bold text-slate-800">ตารางคำนวณ (อัตโนมัติ)</h3>
+                    <div class="flex space-x-2">
+                        <span class="text-xs px-2 py-1 bg-slate-100 text-slate-600 rounded">รวมอนาคต 12 เดือน</span>
+                    </div>
+                </div>
+                
+                <div class="table-container overflow-x-auto flex-grow h-[600px]">
+                    <table class="min-w-full divide-y divide-slate-200 relative">
+                        <thead class="bg-slate-50 sticky top-0 z-20 shadow-sm">
+                            <tr>
+                                <th scope="col" class="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider w-24">เดือน/ปี</th>
+                                <th scope="col" class="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">เหตุการณ์</th>
+                                <th scope="col" class="px-3 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">เพิ่ม/ปรับ</th>
+                                <th scope="col" class="px-3 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">ควรได้</th>
+                                <th scope="col" class="px-3 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">ตกเบิก</th>
+                                <th scope="col" class="px-3 py-3 text-center text-xs font-medium text-slate-500 uppercase tracking-wider w-20">สถานะ</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-slate-200 text-sm" id="ledgerTableBody">
+                            <!-- Rows generated by JS -->
+                        </tbody>
+                        <tfoot class="bg-slate-50 sticky bottom-0 z-20 font-bold border-t-2 border-slate-200">
+                            <tr>
+                                <td colspan="4" class="px-3 py-4 text-right text-slate-700">ยอดตกเบิกสะสม (ถึงปัจจุบัน):</td>
+                                <td class="px-3 py-4 text-right text-emerald-600" id="footerTotal">...</td>
+                                <td></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="bg-white border-t border-slate-200 mt-8 py-8">
+        <div class="max-w-7xl mx-auto px-4 text-center text-slate-400 text-sm">
+            <p>ระบบคำนวณอัตโนมัตินี้เป็นเครื่องมือประมาณการเบื้องต้น ควรตรวจสอบกับฝ่ายการเงินของหน่วยงานเพื่อความถูกต้องที่สุด</p>
+        </div>
+    </footer>
+
+    <!-- JavaScript Logic -->
+    <script>
+        // --- Helper Functions ---
+        const formatTHB = (num) => new Intl.NumberFormat('th-TH', { style: 'currency', currency: 'THB' }).format(num);
+        const getThaiMonth = (monthIndex) => ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."][monthIndex];
+        
+        // --- Core Calculation Logic ---
+        function generateSalaryData() {
+            const startDate = new Date(2024, 7, 9); // 9 Aug 2024
+            const today = new Date();
+            // Generate until Today + 12 Months
+            const endDate = new Date(today.getFullYear(), today.getMonth() + 12, 1);
+            
+            let data = [];
+            let currentDate = new Date(startDate.getFullYear(), startDate.getMonth(), 1); // Start iterating from month start
+            
+            // Initial State
+            let baseSalary = 23100; // Starting PhD base (before adjustment)
+            let accumulatedIncrease = 0; // Money from evaluations
+            const fixedReceived = 16500;
+            
+            while (currentDate <= endDate) {
+                const year = currentDate.getFullYear();
+                const month = currentDate.getMonth(); // 0-11
+                const thaiYear = year + 543;
+                const shortYear = String(thaiYear).slice(-2);
+                const monthStr = `${getThaiMonth(month)} ${shortYear}`;
+                
+                let event = "-";
+                let increase = 0;
+                let note = "";
+                let isTimelineEvent = false;
+                let timelineColor = "";
+
+                // --- 1. Base Adjustment Rule (May 2025) ---
+                if (year === 2025 && month === 4) { // May 2025
+                    const oldBase = baseSalary;
+                    baseSalary = 25410; // New Govt Base for PhD Year 2
+                    increase = baseSalary - oldBase; // 2310 baht jump
+                    event = "ปรับฐาน ป.เอก (ปีที่ 2)";
+                    note = "ฐานขยับเป็น 25,410 + เงินเพิ่มเดิม";
+                    isTimelineEvent = true;
+                    timelineColor = "bg-amber-500";
+                }
+
+                // --- 2. Evaluation Rules (Apr & Oct) ---
+                // April (Month 3)
+                if (month === 3) {
+                    if (year === 2025) {
+                        // Apr 2025: First increase (Low base calculation)
+                        increase = 540; // 3% of 17980
+                        accumulatedIncrease += increase;
+                        event = "รอบประเมิน เม.ย. (3%)";
+                        note = "ฐานคำนวณล่าง (17,980 x 3%)";
+                        isTimelineEvent = true;
+                        timelineColor = "bg-blue-500";
+                    } else if (year > 2025) {
+                        // Future Aprils: High base calculation (Assuming salary > 20960)
+                        increase = 720; // 3% of 23930
+                        accumulatedIncrease += increase;
+                        event = "รอบประเมิน เม.ย. (3%)";
+                        note = "ฐานคำนวณบน (23,930 x 3%)";
+                        // Only mark timeline for the first future one to avoid clutter? Or all? Let's keep it clean.
+                        if (year === 2026) { isTimelineEvent = true; timelineColor = "bg-indigo-500"; }
+                    }
+                }
+                
+                // October (Month 9)
+                if (month === 9) {
+                    if (year === 2024) {
+                        event = "รอบประเมิน ต.ค. (ไม่ได้เลื่อน)";
+                        note = "อายุงานไม่ถึง 4 เดือน";
+                        isTimelineEvent = true;
+                        timelineColor = "bg-slate-400";
+                    } else if (year >= 2025) {
+                        // Oct 2025 onwards: High base calculation
+                        increase = 720; // 3% of 23930
+                        accumulatedIncrease += increase;
+                        event = "รอบประเมิน ต.ค. (3%)";
+                        note = "ฐานคำนวณบน (23,930 x 3%)";
+                        if (year === 2025) { isTimelineEvent = true; timelineColor = "bg-emerald-500"; }
+                    }
+                }
+
+                // First Month Logic (Prorated)
+                let backpay = 0;
+                let expected = baseSalary + accumulatedIncrease;
+                
+                if (year === 2024 && month === 7) { // Aug 2024
+                    const daysInMonth = 31;
+                    const workedDays = 31 - 9 + 1; // 23 days
+                    const monthlyGap = expected - fixedReceived;
+                    backpay = (monthlyGap / daysInMonth) * workedDays;
+                    event = "บรรจุใหม่ (เริ่ม 9 ส.ค.)";
+                    note = `คิดตกเบิก ${workedDays} วัน`;
+                    isTimelineEvent = true;
+                    timelineColor = "bg-slate-600";
+                } else {
+                    backpay = expected - fixedReceived;
+                }
+
+                // Check if this row is in the future
+                // A row is "future" if rowDate > today's month/year
+                const rowDateStart = new Date(year, month, 1);
+                const currentRealMonthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+                const isFuture = rowDateStart > currentRealMonthStart;
+
+                data.push({
+                    id: data.length,
+                    monthStr,
+                    event,
+                    note,
+                    received: fixedReceived,
+                    expected,
+                    increase,
+                    backpay,
+                    isFuture,
+                    isTimelineEvent,
+                    timelineColor,
+                    year,
+                    month
+                });
+
+                // Move to next month
+                currentDate.setMonth(currentDate.getMonth() + 1);
+            }
+            return data;
+        }
+
+        // --- Render Functions ---
+        document.addEventListener('DOMContentLoaded', () => {
+            const data = generateSalaryData();
+            const today = new Date();
+            document.getElementById('currentDateDisplay').innerText = `ข้อมูล ณ วันที่: ${today.getDate()} ${getThaiMonth(today.getMonth())} ${today.getFullYear()+543}`;
+
+            renderStats(data);
+            renderCharts(data);
+            renderTimeline(data);
+            renderTable(data);
+        });
+
+        function renderStats(data) {
+            // Filter only up to "Current Month" for the total stats
+            const currentData = data.filter(d => !d.isFuture);
+            const totalBackpay = currentData.reduce((sum, item) => sum + item.backpay, 0);
+            const lastRecord = currentData[currentData.length - 1];
+
+            document.getElementById('totalBackpayDisplay').innerText = formatTHB(totalBackpay).replace('฿', '');
+            document.getElementById('backpayRangeDisplay').innerText = `สะสมตั้งแต่ ส.ค. 67 - ${lastRecord.monthStr}`;
+            
+            document.getElementById('currentGapDisplay').innerText = formatTHB(lastRecord.backpay).replace('฿', '');
+            document.getElementById('currentSalaryDisplay').innerText = formatTHB(lastRecord.expected).replace('฿', '');
+            document.getElementById('footerTotal').innerText = formatTHB(totalBackpay);
+        }
+
+        function renderCharts(data) {
+            const labels = data.map(d => d.monthStr);
+            const receivedData = data.map(d => d.received);
+            const expectedData = data.map(d => d.expected);
+            
+            let cumulative = 0;
+            const cumulativeData = data.map(d => {
+                if (d.isFuture) return null; // Don't plot cumulative for future to show clear stop
+                cumulative += d.backpay;
+                return cumulative;
+            });
+            
+            // Projection for cumulative (dotted line?) - Let's just plot continuous for now but color differently via dataset hacking if needed. 
+            // For simplicity, let's plot full cumulative estimation
+            let cumulativeProjected = 0;
+            const cumulativeProjectedData = data.map(d => {
+                cumulativeProjected += d.backpay;
+                return cumulativeProjected;
+            });
+
+            // Chart 1: Comparison
+            new Chart(document.getElementById('salaryComparisonChart'), {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'ได้รับจริง (คงที่)',
+                            data: receivedData,
+                            backgroundColor: '#e2e8f0',
+                            barPercentage: 0.6,
+                            order: 3
+                        },
+                        {
+                            label: 'ที่ควรได้รับ (รวมอนาคต)',
+                            data: expectedData,
+                            type: 'line',
+                            borderColor: '#3b82f6',
+                            borderWidth: 2,
+                            backgroundColor: '#3b82f6',
+                            pointRadius: data.map(d => d.isFuture ? 2 : 4), // Smaller dots for future
+                            borderDash: data.map(d => d.isFuture ? [5, 5] : []), // Dashed line doesn't work well per point in ChartJS simple config, use segment
+                            segment: {
+                                borderDash: ctx => ctx.p0.parsed.x >= data.findIndex(d => d.isFuture) - 1 ? [6, 6] : undefined,
+                                borderColor: ctx => ctx.p0.parsed.x >= data.findIndex(d => d.isFuture) - 1 ? '#93c5fd' : '#3b82f6'
+                            },
+                            tension: 0.1,
+                            order: 1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                footer: (items) => `ส่วนต่าง: +${formatTHB(expectedData[items[0].dataIndex] - receivedData[items[0].dataIndex])}`
+                            }
+                        }
+                    },
+                    scales: { y: { min: 15000 } }
+                }
+            });
+
+            // Chart 2: Cumulative
+            new Chart(document.getElementById('cumulativeBackpayChart'), {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'เงินตกเบิกสะสม',
+                        data: cumulativeProjectedData,
+                        fill: true,
+                        backgroundColor: (context) => {
+                            const ctx = context.chart.ctx;
+                            const gradient = ctx.createLinearGradient(0, 0, 0, 400);
+                            gradient.addColorStop(0, 'rgba(16, 185, 129, 0.2)');
+                            gradient.addColorStop(1, 'rgba(16, 185, 129, 0)');
+                            return gradient;
+                        },
+                        borderColor: '#059669',
+                        borderWidth: 2,
+                        pointBackgroundColor: '#fff',
+                        pointBorderColor: '#059669',
+                        segment: {
+                            borderDash: ctx => ctx.p0.parsed.x >= data.findIndex(d => d.isFuture) - 1 ? [6, 6] : undefined,
+                            borderColor: ctx => ctx.p0.parsed.x >= data.findIndex(d => d.isFuture) - 1 ? '#6ee7b7' : '#059669'
+                        }
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: { y: { beginAtZero: true } }
+                }
+            });
+        }
+
+        function renderTimeline(data) {
+            const container = document.getElementById('timelineContainer');
+            const events = data.filter(d => d.isTimelineEvent);
+            
+            events.forEach((evt, idx) => {
+                const item = document.createElement('div');
+                item.className = 'relative z-10 flex items-start mb-8 last:mb-0 group cursor-default';
+                item.innerHTML = `
+                    <div class="flex-shrink-0 w-10 h-10 rounded-full ${evt.timelineColor} border-4 border-white shadow-md flex items-center justify-center text-white font-bold text-xs timeline-point">
+                        ${idx + 1}
+                    </div>
+                    <div class="ml-4 bg-slate-50 p-3 rounded-lg border border-slate-200 w-full hover:shadow-md transition-all ${evt.isFuture ? 'opacity-60 grayscale' : ''}">
+                        <div class="flex justify-between">
+                            <div class="text-xs font-bold text-slate-400 uppercase tracking-wide">${evt.monthStr}</div>
+                            ${evt.isFuture ? '<span class="text-[10px] px-1.5 py-0.5 bg-slate-200 text-slate-500 rounded">อนาคต</span>' : ''}
+                        </div>
+                        <h4 class="text-sm font-bold text-slate-800">${evt.event}</h4>
+                        <p class="text-xs text-slate-600 mt-1">${evt.note}</p>
+                        ${evt.increase > 0 ? `<div class="mt-2 text-xs font-bold text-emerald-600">+${formatTHB(evt.increase)}</div>` : ''}
+                    </div>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        function renderTable(data) {
+            const tbody = document.getElementById('ledgerTableBody');
+            
+            data.forEach(row => {
+                const tr = document.createElement('tr');
+                // Styles based on state
+                let rowClass = "";
+                let statusBadge = "";
+                
+                if (row.isFuture) {
+                    rowClass = "bg-slate-50 text-slate-400";
+                    statusBadge = `<span class="px-2 py-1 rounded-full text-[10px] font-semibold tag-future">อนาคต</span>`;
+                } else {
+                    rowClass = row.increase > 0 ? "bg-blue-50/30" : "";
+                    statusBadge = `<span class="px-2 py-1 rounded-full text-[10px] font-semibold tag-past">รับสิทธิ์</span>`;
+                }
+                
+                tr.className = rowClass;
+
+                // Increase Column formatting
+                let increaseHtml = `<span class="text-slate-300">-</span>`;
+                if (row.increase > 0) {
+                    increaseHtml = `<span class="${row.isFuture ? 'text-emerald-400' : 'text-emerald-600'} font-bold">+${formatTHB(row.increase).replace('฿', '')}</span>`;
+                } else if (row.event.includes("ปรับฐาน")) {
+                    increaseHtml = `<span class="text-amber-500 font-bold">ปรับฐาน</span>`;
+                }
+
+                tr.innerHTML = `
+                    <td class="px-3 py-3 whitespace-nowrap font-medium ${row.isFuture ? 'text-slate-400' : 'text-slate-700'}">${row.monthStr}</td>
+                    <td class="px-3 py-3">
+                        <div class="text-sm ${row.isFuture ? 'text-slate-400' : 'text-slate-600'}">${row.event}</div>
+                        ${row.note ? `<div class="text-xs text-slate-400">${row.note}</div>` : ''}
+                    </td>
+                    <td class="px-3 py-3 whitespace-nowrap text-right">${increaseHtml}</td>
+                    <td class="px-3 py-3 whitespace-nowrap text-right font-semibold ${row.isFuture ? 'text-blue-400' : 'text-blue-600'}">${formatTHB(row.expected)}</td>
+                    <td class="px-3 py-3 whitespace-nowrap text-right font-bold ${row.isFuture ? 'text-emerald-400' : 'text-emerald-600'}">${formatTHB(row.backpay)}</td>
+                    <td class="px-3 py-3 text-center">${statusBadge}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+    </script>
+</body>
+</html>
