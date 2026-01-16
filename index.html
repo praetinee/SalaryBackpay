@@ -183,6 +183,7 @@
                                 <th scope="col" class="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider w-24">เดือน/ปี</th>
                                 <th scope="col" class="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">เหตุการณ์</th>
                                 <th scope="col" class="px-3 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">เพิ่ม/ปรับ</th>
+                                <th scope="col" class="px-3 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">รับจริง</th>
                                 <th scope="col" class="px-3 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">ควรได้</th>
                                 <th scope="col" class="px-3 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">ตกเบิก</th>
                                 <th scope="col" class="px-3 py-3 text-center text-xs font-medium text-slate-500 uppercase tracking-wider w-20">สถานะ</th>
@@ -193,7 +194,7 @@
                         </tbody>
                         <tfoot class="bg-slate-50 sticky bottom-0 z-20 font-bold border-t-2 border-slate-200">
                             <tr>
-                                <td colspan="4" class="px-3 py-4 text-right text-slate-700">ยอดตกเบิกสะสม (ถึงปัจจุบัน):</td>
+                                <td colspan="5" class="px-3 py-4 text-right text-slate-700">ยอดตกเบิกสะสม (ถึงปัจจุบัน):</td>
                                 <td class="px-3 py-4 text-right text-emerald-600" id="footerTotal">...</td>
                                 <td></td>
                             </tr>
@@ -524,6 +525,7 @@
                         ${row.note ? `<div class="text-xs text-slate-400">${row.note}</div>` : ''}
                     </td>
                     <td class="px-3 py-3 whitespace-nowrap text-right">${increaseHtml}</td>
+                    <td class="px-3 py-3 whitespace-nowrap text-right font-medium text-slate-500">${formatTHB(row.received)}</td>
                     <td class="px-3 py-3 whitespace-nowrap text-right font-semibold ${row.isFuture ? 'text-blue-400' : 'text-blue-600'}">${formatTHB(row.expected)}</td>
                     <td class="px-3 py-3 whitespace-nowrap text-right font-bold ${row.isFuture ? 'text-emerald-400' : 'text-emerald-600'}">${formatTHB(row.backpay)}</td>
                     <td class="px-3 py-3 text-center">${statusBadge}</td>
