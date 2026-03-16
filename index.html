@@ -176,9 +176,10 @@
                                 <th scope="col" class="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">เหตุการณ์</th>
                                 <th scope="col" class="px-3 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">เพิ่ม/ปรับ</th>
                                 <th scope="col" class="px-3 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">รับจริง</th>
-                                <th scope="col" class="px-3 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">ควรได้</th>
+                                <th scope="col" class="px-3 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">ควรได้ (ป.ตรี)</th>
+                                <th scope="col" class="px-3 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">ควรได้ (ป.เอก)</th>
                                 <th scope="col" class="px-3 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">ตกเบิก</th>
-                                <th scope="col" class="px-3 py-3 text-center text-xs font-medium text-slate-500 uppercase tracking-wider w-20">สถานะ</th>
+                                <th scope="col" class="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">สถานะ (แจกแจง)</th>
                             </tr>
                         </thead>
                         <tbody class="bg-white divide-y divide-slate-200 text-sm" id="ledgerTableBody">
@@ -202,6 +203,15 @@
 
     <!-- JavaScript Logic -->
     <script>
+        // ==========================================
+        // ตั้งค่ายอดเงินที่รับมาแล้วตรงนี้ (แยกตามหมวดหมู่)
+        // ==========================================
+        const RECEIVED_PHD_BASE = 0;       // 1. ตกเบิกวุฒิ ป.เอก (ยังไม่ได้รับ)
+        const RECEIVED_GOV_BASE = 9075;    // 2. ตกเบิกปรับฐานรัฐบาล (พ.ค. 68) 
+        const RECEIVED_EVAL = 3219.75;     // 3. ตกเบิกเลื่อนขั้น (เม.ย. 68)
+        
+        const ALREADY_RECEIVED_AMOUNT = RECEIVED_PHD_BASE + RECEIVED_GOV_BASE + RECEIVED_EVAL; 
+
         // --- Helper Functions ---
         const formatTHB = (num) => new Intl.NumberFormat('th-TH', { style: 'currency', currency: 'THB', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(num);
         const getThaiMonth = (monthIndex) => ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."][monthIndex];
@@ -210,21 +220,17 @@
         function generateSalaryData() {
             const startDate = new Date(2024, 7, 9); // 9 Aug 2024
             const today = new Date();
-            // Generate until Today + 12 Months
             const endDate = new Date(today.getFullYear(), today.getMonth() + 12, 1);
             
             let data = [];
-            let currentDate = new Date(startDate.getFullYear(), startDate.getMonth(), 1); // Start iterating from month start
+            let currentDate = new Date(startDate.getFullYear(), startDate.getMonth(), 1);
             
-            // --- Initial State ---
-            let baseSalary = 23100; // กลับมาใช้ฐาน ป.เอก เพื่อหาเงินที่ควรได้ (ส่วนต่างตกเบิก)
-            
-            let accumulatedIncrease = 0; // Money from evaluations
+            let accumulatedIncrease = 0; 
             const fixedReceived = 16500;
             
             while (currentDate <= endDate) {
                 const year = currentDate.getFullYear();
-                const month = currentDate.getMonth(); // 0-11
+                const month = currentDate.getMonth();
                 const thaiYear = year + 543;
                 const shortYear = String(thaiYear).slice(-2);
                 const monthStr = `${getThaiMonth(month)} ${shortYear}`;
@@ -235,11 +241,17 @@
                 let isTimelineEvent = false;
                 let timelineColor = "";
 
+                // กำหนดฐานเงินเดือนตามช่วงเวลา
+                let currentGovBase = (year > 2025 || (year === 2025 && month >= 4)) ? 18150 : 16500;
+                let currentPhdBase = (year > 2025 || (year === 2025 && month >= 4)) ? 25410 : 23100;
+
+                let backpayPhd = currentPhdBase - currentGovBase; 
+                let backpayGov = currentGovBase - 16500; 
+                let backpayEval = accumulatedIncrease; 
+
                 // --- 1. Base Adjustment Rule (May 2025) ---
                 if (year === 2025 && month === 4) { // May 2025
-                    const oldBase = baseSalary;
-                    baseSalary = 25410; // นโยบายปรับฐานรัฐบาล ปีที่ 2
-                    increase = baseSalary - oldBase; // 2310 baht
+                    increase = 25410 - 23100; // 2310 baht (แสดงเป็นผลรวมที่ปรับขึ้น)
                     event = "นโยบายปรับฐานรัฐบาล (พ.ค. 68)";
                     note = "ฐาน ป.เอก ทั่วประเทศขยับเป็น 25,410";
                     isTimelineEvent = true;
@@ -247,27 +259,25 @@
                 }
 
                 // --- 2. Evaluation Rules (Apr & Oct) ---
-                // April (Month 3)
                 if (month === 3) {
                     if (year === 2025) {
-                        // Apr 2025: อ้างอิงจากเงินที่ได้รับจริง (คำนวณย้อนกลับ)
-                        increase = 536.625; // 3219.75 / 12 = 268.3125 (ครึ่งเดือน) -> x2 = 536.625 (เต็มเดือน)
+                        increase = 536.625; 
                         accumulatedIncrease += increase;
+                        backpayEval = accumulatedIncrease; // อัปเดตยอดประเมิน
                         event = "รอบประเมิน เม.ย. (~2.98%)";
-                        note = "ประเมินจากฐานล่าง (17,980 x 2.984%)"; // 536.625 / 17980 = 2.9845...%
+                        note = "ประเมินจากฐานล่าง (17,980 x 2.984%)";
                         isTimelineEvent = true;
                         timelineColor = "bg-blue-500";
                     } else if (year > 2025) {
-                        // Future Aprils: ยึดตามฐานล่างไปก่อน
-                        increase = 540; // 3% ของฐานล่าง 17,980
+                        increase = 540; 
                         accumulatedIncrease += increase;
+                        backpayEval = accumulatedIncrease;
                         event = "รอบประเมิน เม.ย. (3%)";
                         note = "ประเมินจากฐานล่าง (17,980 x 3%)";
                         if (year === 2026) { isTimelineEvent = true; timelineColor = "bg-indigo-500"; }
                     }
                 }
                 
-                // October (Month 9)
                 if (month === 9) {
                     if (year === 2024) {
                         event = "รอบประเมิน ต.ค. (ไม่ได้เลื่อน)";
@@ -275,9 +285,9 @@
                         isTimelineEvent = true;
                         timelineColor = "bg-slate-400";
                     } else if (year >= 2025) {
-                        // Oct 2025 onwards: ยึดตามฐานล่างไปก่อน
-                        increase = 540; // 3% ของฐานล่าง 17,980
+                        increase = 540; 
                         accumulatedIncrease += increase;
+                        backpayEval = accumulatedIncrease;
                         event = "รอบประเมิน ต.ค. (3%)";
                         note = "ประเมินจากฐานล่าง (17,980 x 3%)";
                         if (year === 2025) { isTimelineEvent = true; timelineColor = "bg-emerald-500"; }
@@ -285,27 +295,25 @@
                 }
 
                 // First Month Logic (Prorated)
-                let backpay = 0;
-                let expected = baseSalary + accumulatedIncrease;
-                
                 if (year === 2024 && month === 7) { // Aug 2024
                     const daysInMonth = 31;
-                    // บรรจุ 9 ส.ค. 67
-                    // คำสั่ง ป.เอก มีผล 10 ส.ค. 67 (หลังบรรจุ 1 วัน)
-                    const phdDays = 31 - 10 + 1; // 22 วันที่ควรได้ฐาน ป.เอก
+                    const phdDays = 31 - 10 + 1; // 22 วัน
                     
-                    const monthlyGap = expected - fixedReceived; // ส่วนต่าง 23,100 - 16,500 = 6,600
-                    backpay = (monthlyGap / daysInMonth) * phdDays;
+                    backpayPhd = (backpayPhd / daysInMonth) * phdDays;
+                    backpayGov = (backpayGov / daysInMonth) * phdDays;
+                    backpayEval = (backpayEval / daysInMonth) * phdDays;
                     
                     event = "บรรจุ(9 ส.ค.) / ปรับวุฒิ(10 ส.ค.)";
                     note = `คิดส่วนต่าง ป.เอก จำนวน ${phdDays} วัน`;
                     isTimelineEvent = true;
                     timelineColor = "bg-slate-600";
-                } else {
-                    backpay = expected - fixedReceived;
                 }
 
-                // Check if this row is in the future
+                let backpay = backpayPhd + backpayGov + backpayEval;
+                let expectedGov = currentGovBase + accumulatedIncrease;
+                let expectedPhd = currentPhdBase + accumulatedIncrease;
+                let expected = expectedPhd; // สำหรับให้กราฟดึงไปใช้
+
                 const rowDateStart = new Date(year, month, 1);
                 const currentRealMonthStart = new Date(today.getFullYear(), today.getMonth(), 1);
                 const isFuture = rowDateStart > currentRealMonthStart;
@@ -317,8 +325,13 @@
                     note,
                     received: fixedReceived,
                     expected,
+                    expectedGov,
+                    expectedPhd,
                     increase,
                     backpay,
+                    backpayPhd,
+                    backpayGov,
+                    backpayEval,
                     isFuture,
                     isTimelineEvent,
                     timelineColor,
@@ -326,7 +339,6 @@
                     month
                 });
 
-                // Move to next month
                 currentDate.setMonth(currentDate.getMonth() + 1);
             }
             return data;
@@ -350,8 +362,8 @@
             const totalBackpay = currentData.reduce((sum, item) => sum + item.backpay, 0);
             const lastRecord = currentData[currentData.length - 1];
 
-            // เงินที่ได้รับตกเบิกมาแล้ว (ครึ่งแรก)
-            const alreadyReceived = 12294.75;
+            // เงินที่ได้รับตกเบิกมาแล้ว
+            const alreadyReceived = ALREADY_RECEIVED_AMOUNT;
             const netRemaining = totalBackpay - alreadyReceived;
 
             document.getElementById('netBackpayDisplay').innerText = formatTHB(netRemaining).replace('฿', '');
@@ -364,18 +376,18 @@
             const tableFooter = document.getElementById('tableFooter');
             tableFooter.innerHTML = `
                 <tr>
-                    <td colspan="5" class="px-3 py-2 text-right text-slate-500 font-normal">ยอดตกเบิกสะสมรวมทั้งหมด:</td>
+                    <td colspan="6" class="px-3 py-2 text-right text-slate-500 font-normal">ยอดตกเบิกสะสมรวมทั้งหมด:</td>
                     <td class="px-3 py-2 text-right text-slate-500 font-normal">${formatTHB(totalBackpay)}</td>
                     <td></td>
                 </tr>
                 <tr>
-                    <td colspan="5" class="px-3 py-2 text-right text-rose-500 font-normal">หัก: รับเงินตกเบิกแล้ว (ครึ่งแรก):</td>
-                    <td class="px-3 py-2 text-right text-rose-500 font-normal">-${formatTHB(alreadyReceived)}</td>
+                    <td colspan="6" class="px-3 py-2 text-right text-emerald-600 font-normal">หัก: รับเงินตกเบิกแล้ว:</td>
+                    <td class="px-3 py-2 text-right text-emerald-600 font-normal">-${formatTHB(alreadyReceived)}</td>
                     <td></td>
                 </tr>
                 <tr class="border-t border-slate-200">
-                    <td colspan="5" class="px-3 py-3 text-right text-slate-800 text-base">ยอดตกเบิกคงเหลือสุทธิ:</td>
-                    <td class="px-3 py-3 text-right text-emerald-600 text-base">${formatTHB(netRemaining)}</td>
+                    <td colspan="6" class="px-3 py-3 text-right text-slate-800 text-base">ยอดตกเบิกคงเหลือสุทธิ:</td>
+                    <td class="px-3 py-3 text-right text-rose-500 text-base">${formatTHB(netRemaining)}</td>
                     <td></td>
                 </tr>
             `;
@@ -498,21 +510,68 @@
         function renderTable(data) {
             const tbody = document.getElementById('ledgerTableBody');
             
+            // ตัวแปรสำหรับไล่หักลบยอดที่รับแล้วแยกตามหมวดหมู่
+            let remainingPhd = RECEIVED_PHD_BASE;
+            let remainingGov = RECEIVED_GOV_BASE;
+            let remainingEval = RECEIVED_EVAL;
+            
             data.forEach(row => {
                 const tr = document.createElement('tr');
-                
                 let rowClass = "";
-                let statusBadge = "";
+                let statusHtml = "";
                 
                 if (row.isFuture) {
                     rowClass = "bg-slate-50 text-slate-400";
-                    statusBadge = `<span class="px-2 py-1 rounded-full text-[10px] font-semibold tag-future">อนาคต</span>`;
+                    statusHtml = `<span class="px-2 py-1 rounded-full text-[10px] font-semibold tag-future">อนาคต</span>`;
                 } else {
                     rowClass = row.increase > 0 ? "bg-blue-50/30" : "";
-                    statusBadge = `<span class="px-2 py-1 rounded-full text-[10px] font-semibold tag-past">รับสิทธิ์</span>`;
+                    
+                    // Helper ฟังก์ชันสำหรับคำนวณการหักลบรายก้อน
+                    const processCategory = (amount, remainingRef) => {
+                        if (amount <= 0) return { status: 'none', remaining: remainingRef };
+                        let status = 'unpaid';
+                        let newRemaining = remainingRef;
+                        if (remainingRef >= amount - 0.01) {
+                            status = 'paid';
+                            newRemaining -= amount;
+                        } else if (remainingRef > 0) {
+                            status = 'partial';
+                            newRemaining = 0;
+                        }
+                        return { status, remaining: newRemaining };
+                    };
+
+                    const phdRes = processCategory(row.backpayPhd, remainingPhd);
+                    remainingPhd = phdRes.remaining;
+
+                    const govRes = processCategory(row.backpayGov, remainingGov);
+                    remainingGov = govRes.remaining;
+
+                    const evalRes = processCategory(row.backpayEval, remainingEval);
+                    remainingEval = evalRes.remaining;
+
+                    // สร้างป้ายกำกับสถานะ (Badges)
+                    let badges = [];
+                    const createBadge = (label, status) => {
+                        if (status === 'paid') return `<div class="px-2 py-1 rounded text-[10px] font-semibold bg-emerald-100 text-emerald-700 border border-emerald-200 flex items-center gap-1"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg> ${label}</div>`;
+                        if (status === 'partial') return `<div class="px-2 py-1 rounded text-[10px] font-semibold bg-amber-100 text-amber-700 border border-amber-200">⏳ ${label} (ได้บางส่วน)</div>`;
+                        if (status === 'unpaid') return `<div class="px-2 py-1 rounded text-[10px] font-semibold bg-rose-50 text-rose-500 border border-rose-100">❌ ${label}</div>`;
+                        return '';
+                    };
+
+                    if (row.backpayPhd > 0) badges.push(createBadge('ป.เอก', phdRes.status));
+                    if (row.backpayGov > 0) badges.push(createBadge('ปรับฐานฯ', govRes.status));
+                    if (row.backpayEval > 0) badges.push(createBadge('เลื่อนขั้น', evalRes.status));
+
+                    statusHtml = `<div class="flex flex-col gap-1.5 items-start min-w-[110px] py-1">${badges.join('')}</div>`;
+                    
+                    // ถ้ายอดคาดหวังในเดือนนั้นถูกจ่ายครบหมดทุกก้อนแล้ว ให้ตัวอักษรจางลง
+                    const isFullyPaid = (row.backpayPhd > 0 ? phdRes.status === 'paid' : true) &&
+                                        (row.backpayGov > 0 ? govRes.status === 'paid' : true) &&
+                                        (row.backpayEval > 0 ? evalRes.status === 'paid' : true);
+                                        
+                    if (isFullyPaid) rowClass += " opacity-60";
                 }
-                
-                tr.className = rowClass;
 
                 let increaseHtml = `<span class="text-slate-300">-</span>`;
                 if (row.increase > 0) {
@@ -521,17 +580,21 @@
                     increaseHtml = `<span class="text-amber-500 font-bold">ปรับฐาน</span>`;
                 }
 
+                // ตรวจสอบความจางของข้อความ
+                const textOpacityClass = (rowClass.includes("opacity-60") && !row.isFuture) ? "text-slate-400" : "";
+
                 tr.innerHTML = `
-                    <td class="px-3 py-3 whitespace-nowrap font-medium ${row.isFuture ? 'text-slate-400' : 'text-slate-700'}">${row.monthStr}</td>
-                    <td class="px-3 py-3">
-                        <div class="text-sm ${row.isFuture ? 'text-slate-400' : 'text-slate-600'}">${row.event}</div>
-                        ${row.note ? `<div class="text-xs text-slate-400">${row.note}</div>` : ''}
+                    <td class="px-3 py-3 align-top whitespace-nowrap font-medium ${row.isFuture ? 'text-slate-400' : 'text-slate-700'} ${textOpacityClass}">${row.monthStr}</td>
+                    <td class="px-3 py-3 align-top ${textOpacityClass}">
+                        <div class="text-sm ${row.isFuture ? 'text-slate-400' : 'text-slate-600'} ${textOpacityClass}">${row.event}</div>
+                        ${row.note ? `<div class="text-xs text-slate-400 mt-0.5">${row.note}</div>` : ''}
                     </td>
-                    <td class="px-3 py-3 whitespace-nowrap text-right">${increaseHtml}</td>
-                    <td class="px-3 py-3 whitespace-nowrap text-right font-medium text-slate-500">${formatTHB(row.received)}</td>
-                    <td class="px-3 py-3 whitespace-nowrap text-right font-semibold ${row.isFuture ? 'text-blue-400' : 'text-blue-600'}">${formatTHB(row.expected)}</td>
-                    <td class="px-3 py-3 whitespace-nowrap text-right font-bold ${row.isFuture ? 'text-emerald-400' : 'text-emerald-600'}">${formatTHB(row.backpay)}</td>
-                    <td class="px-3 py-3 text-center">${statusBadge}</td>
+                    <td class="px-3 py-3 align-top whitespace-nowrap text-right ${textOpacityClass}">${increaseHtml}</td>
+                    <td class="px-3 py-3 align-top whitespace-nowrap text-right font-medium text-slate-500 ${textOpacityClass}">${formatTHB(row.received)}</td>
+                    <td class="px-3 py-3 align-top whitespace-nowrap text-right font-medium ${row.isFuture ? 'text-slate-400' : 'text-slate-600'} ${textOpacityClass}">${formatTHB(row.expectedGov)}</td>
+                    <td class="px-3 py-3 align-top whitespace-nowrap text-right font-semibold ${row.isFuture ? 'text-blue-400' : 'text-blue-600'} ${textOpacityClass}">${formatTHB(row.expectedPhd)}</td>
+                    <td class="px-3 py-3 align-top whitespace-nowrap text-right font-bold ${row.isFuture ? 'text-emerald-400' : 'text-emerald-600'} ${textOpacityClass}">${formatTHB(row.backpay)}</td>
+                    <td class="px-3 py-2 align-top">${statusHtml}</td>
                 `;
                 tbody.appendChild(tr);
             });
