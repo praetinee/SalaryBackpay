@@ -179,7 +179,6 @@
                                 <th scope="col" class="px-3 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">ควรได้ (ป.ตรี)</th>
                                 <th scope="col" class="px-3 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">ควรได้ (ป.เอก)</th>
                                 <th scope="col" class="px-3 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">ตกเบิก</th>
-                                <th scope="col" class="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">สถานะ (แจกแจง)</th>
                             </tr>
                         </thead>
                         <tbody class="bg-white divide-y divide-slate-200 text-sm" id="ledgerTableBody">
@@ -388,17 +387,14 @@
                 <tr>
                     <td colspan="6" class="px-3 py-2 text-right text-slate-500 font-normal">ยอดตกเบิกสะสมรวมทั้งหมด:</td>
                     <td class="px-3 py-2 text-right text-slate-500 font-normal">${formatTHB(totalBackpay)}</td>
-                    <td></td>
                 </tr>
                 <tr>
                     <td colspan="6" class="px-3 py-2 text-right text-emerald-600 font-normal">หัก: รับเงินตกเบิกแล้ว:</td>
                     <td class="px-3 py-2 text-right text-emerald-600 font-normal">-${formatTHB(alreadyReceived)}</td>
-                    <td></td>
                 </tr>
                 <tr class="border-t border-slate-200">
                     <td colspan="6" class="px-3 py-3 text-right text-slate-800 text-base">ยอดตกเบิกคงเหลือสุทธิ:</td>
                     <td class="px-3 py-3 text-right text-rose-500 text-base">${formatTHB(netRemaining)}</td>
-                    <td></td>
                 </tr>
             `;
         }
@@ -528,15 +524,13 @@
             data.forEach(row => {
                 const tr = document.createElement('tr');
                 let rowClass = "";
-                let statusHtml = "";
                 
                 if (row.isFuture) {
                     rowClass = "bg-slate-50 text-slate-400";
-                    statusHtml = `<span class="px-2 py-1 rounded-full text-[10px] font-semibold tag-future">อนาคต</span>`;
                 } else {
                     rowClass = row.increase > 0 ? "bg-blue-50/30" : "";
                     
-                    // Helper ฟังก์ชันสำหรับคำนวณการหักลบรายก้อน
+                    // Helper ฟังก์ชันสำหรับคำนวณการหักลบรายก้อน (ยังคงเก็บไว้เพื่อเช็ค opacity ของแถว)
                     const processCategory = (amount, remainingRef) => {
                         if (amount <= 0) return { status: 'none', remaining: remainingRef };
                         let status = 'unpaid';
@@ -560,21 +554,6 @@
                     const evalRes = processCategory(row.backpayEval, remainingEval);
                     remainingEval = evalRes.remaining;
 
-                    // สร้างป้ายกำกับสถานะ (Badges)
-                    let badges = [];
-                    const createBadge = (label, status) => {
-                        if (status === 'paid') return `<div class="px-2 py-1 rounded text-[10px] font-semibold bg-emerald-100 text-emerald-700 border border-emerald-200 flex items-center gap-1"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg> ${label}</div>`;
-                        if (status === 'partial') return `<div class="px-2 py-1 rounded text-[10px] font-semibold bg-amber-100 text-amber-700 border border-amber-200">⏳ ${label} (ได้บางส่วน)</div>`;
-                        if (status === 'unpaid') return `<div class="px-2 py-1 rounded text-[10px] font-semibold bg-rose-50 text-rose-500 border border-rose-100">❌ ${label}</div>`;
-                        return '';
-                    };
-
-                    if (row.backpayPhd > 0) badges.push(createBadge('ป.เอก', phdRes.status));
-                    if (row.backpayGov > 0) badges.push(createBadge('ปรับฐานฯ', govRes.status));
-                    if (row.backpayEval > 0) badges.push(createBadge('เลื่อนขั้น', evalRes.status));
-
-                    statusHtml = `<div class="flex flex-col gap-1.5 items-start min-w-[110px] py-1">${badges.join('')}</div>`;
-                    
                     // ถ้ายอดคาดหวังในเดือนนั้นถูกจ่ายครบหมดทุกก้อนแล้ว ให้ตัวอักษรจางลง
                     const isFullyPaid = (row.backpayPhd > 0 ? phdRes.status === 'paid' : true) &&
                                         (row.backpayGov > 0 ? govRes.status === 'paid' : true) &&
@@ -604,7 +583,6 @@
                     <td class="px-3 py-3 align-top whitespace-nowrap text-right font-medium ${row.isFuture ? 'text-slate-400' : 'text-slate-600'} ${textOpacityClass}">${formatTHB(row.expectedGov)}</td>
                     <td class="px-3 py-3 align-top whitespace-nowrap text-right font-semibold ${row.isFuture ? 'text-blue-400' : 'text-blue-600'} ${textOpacityClass}">${formatTHB(row.expectedPhd)}</td>
                     <td class="px-3 py-3 align-top whitespace-nowrap text-right font-bold ${row.isFuture ? 'text-emerald-400' : 'text-emerald-600'} ${textOpacityClass}">${formatTHB(row.backpay)}</td>
-                    <td class="px-3 py-2 align-top">${statusHtml}</td>
                 `;
                 tbody.appendChild(tr);
             });
