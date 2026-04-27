@@ -95,7 +95,7 @@
             <h2 class="text-xl font-bold text-slate-800 mb-2">สถานะการคำนวณแบบ Real-time</h2>
             <p class="text-slate-600 leading-relaxed">
                 ระบบกำลังคำนวณยอดเงินตกเบิกโดยอัตโนมัติตั้งแต่วันบรรจุ (9 ส.ค. 67) จนถึงเดือนปัจจุบัน และประมาณการล่วงหน้าให้อีก 12 เดือน 
-                โดยระบบจะคำนวณเงินตกเบิกจาก <strong>ฐานเงินเดือน ป.เอก (ที่ควรได้รับ)</strong> ลบด้วยเงินเดือนที่รับจริง (16,500 บาท) แต่ในส่วนของการเลื่อนขั้นจากการประเมิน (เม.ย./ต.ค.) <strong>จะยังคงใช้ฐานล่างในการคำนวณไปก่อน</strong> จนกว่าจะมีคำสั่งเปลี่ยนแปลง
+                โดยระบบจะคำนวณเงินตกเบิกจาก <strong>ฐานเงินเดือน ป.เอก (ที่ควรได้รับ)</strong> ลบด้วยเงินเดือนที่รับจริง (16,500 บาท) แต่ในส่วนของการเลื่อนขั้น (เม.ย./ต.ค.) <strong>จะยังคงใช้ฐานล่างคำนวณ</strong> และนโยบายปรับฐาน พ.ค. 68 <strong>ได้รับในเรต ป.ตรี แล้ว (+1,650/ด.)</strong> ส่วนเรต ป.เอก ยังรอคำสั่งเปลี่ยนแปลง
             </p>
         </section>
 
@@ -207,8 +207,18 @@
         // ตั้งค่ายอดเงินที่รับมาแล้วตรงนี้ (แยกตามหมวดหมู่)
         // ==========================================
         const RECEIVED_PHD_BASE = 0;       // 1. ตกเบิกวุฒิ ป.เอก (ยังไม่ได้รับ)
-        const RECEIVED_GOV_BASE = 9075;    // 2. ตกเบิกปรับฐานรัฐบาล (พ.ค. 68) 
-        const RECEIVED_EVAL = 3219.75;     // 3. ตกเบิกเลื่อนขั้น (เม.ย. 68)
+        
+        // 2. ตกเบิกปรับฐานรัฐบาล (พ.ค. 68) - ได้รับเรต ป.ตรี (1,650/เดือน) แล้วจนถึงปัจจุบัน
+        const _todayForGov = new Date();
+        let _monthsSinceMay25 = (_todayForGov.getFullYear() - 2025) * 12 + _todayForGov.getMonth() - 4 + 1;
+        if (_monthsSinceMay25 < 0) _monthsSinceMay25 = 0;
+        const RECEIVED_GOV_BASE = _monthsSinceMay25 * 1650;
+        
+        // 3. ตกเบิกเลื่อนขั้น (เม.ย. 68) - คำนวณให้ได้รับเดือนละ 600 บาท จนถึงปัจจุบันอัตโนมัติ
+        const _todayForEval = new Date();
+        let _monthsSinceApr25 = (_todayForEval.getFullYear() - 2025) * 12 + _todayForEval.getMonth() - 3 + 1;
+        if (_monthsSinceApr25 < 0) _monthsSinceApr25 = 0;
+        const RECEIVED_EVAL = _monthsSinceApr25 * 600;
         
         const ALREADY_RECEIVED_AMOUNT = RECEIVED_PHD_BASE + RECEIVED_GOV_BASE + RECEIVED_EVAL; 
 
@@ -251,9 +261,9 @@
 
                 // --- 1. Base Adjustment Rule (May 2025) ---
                 if (year === 2025 && month === 4) { // May 2025
-                    increase = 25410 - 23100; // 2310 baht (แสดงเป็นผลรวมที่ปรับขึ้น)
+                    increase = 25410 - 23100; // 2310 baht (ส่วนต่างฐาน ป.เอก ที่เพิ่มขึ้น)
                     event = "นโยบายปรับฐานรัฐบาล (พ.ค. 68)";
-                    note = "ฐาน ป.เอก ทั่วประเทศขยับเป็น 25,410";
+                    note = "ปรับฐาน ป.ตรี ได้แล้ว (+1,650/ด.) / ป.เอก รอคำสั่ง";
                     isTimelineEvent = true;
                     timelineColor = "bg-amber-500";
                 }
@@ -261,11 +271,11 @@
                 // --- 2. Evaluation Rules (Apr & Oct) ---
                 if (month === 3) {
                     if (year === 2025) {
-                        increase = 536.625; 
+                        increase = 600; 
                         accumulatedIncrease += increase;
                         backpayEval = accumulatedIncrease; // อัปเดตยอดประเมิน
-                        event = "รอบประเมิน เม.ย. (~2.98%)";
-                        note = "ประเมินจากฐานล่าง (17,980 x 2.984%)";
+                        event = "รอบประเมิน เม.ย. (3.31000%)";
+                        note = "ประเมินจากฐานล่าง (ได้ 3.31000% คิดเป็นเงิน 600 บาท)";
                         isTimelineEvent = true;
                         timelineColor = "bg-blue-500";
                     } else if (year > 2025) {
