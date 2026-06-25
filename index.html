@@ -253,14 +253,14 @@
                         increase = 600; 
                         accumulatedIncrease += increase;
                         event = "รอบประเมิน เม.ย. (3.31000%)";
-                        note = "ประเมินจากฐานล่าง (ได้ 3.31000% คิดเป็นเงิน 600 บาท)";
+                        note = "ประเมินจากฐานล่าง (ได้ 3.31000% คิดเป็นเงิน 600 บาท) / ป.เอก รอคำสั่ง";
                         isTimelineEvent = true;
                         timelineColor = "bg-blue-500";
                     } else if (year > 2025) {
                         increase = 540; 
                         accumulatedIncrease += increase;
                         event = "รอบประเมิน เม.ย. (3%)";
-                        note = "ประเมินจากฐานล่าง (17,980 x 3%)";
+                        note = "ประเมินจากฐานล่าง (17,980 x 3%) / ป.เอก รอคำสั่ง";
                         if (year === 2026) { isTimelineEvent = true; timelineColor = "bg-indigo-500"; }
                     }
                 }
@@ -269,7 +269,6 @@
                 if (year > 2025 || (year === 2025 && month >= 3)) {
                     rowActualReceived += 600;
                 }
-                // หมายเหตุ: รอบประเมิน ต.ค. 68 ยังไม่ได้เงิน จึงไม่บวกเพิ่มใน rowActualReceived
                 
                 if (month === 9) { // Oct
                     if (year === 2024) {
@@ -277,13 +276,24 @@
                         note = "อายุงานไม่ถึง 4 เดือน";
                         isTimelineEvent = true;
                         timelineColor = "bg-slate-400";
-                    } else if (year >= 2025) {
+                    } else if (year === 2025) {
+                        increase = 610; // อัปเดตเงินขึ้นประเมิน ต.ค. 68
+                        accumulatedIncrease += increase;
+                        event = "รอบประเมิน ต.ค. (3.39%)";
+                        note = "ประเมินจากฐานล่าง (ได้ 3.39% คิดเป็นเงิน 610 บาท) / ป.เอก รอคำสั่ง";
+                        isTimelineEvent = true; 
+                        timelineColor = "bg-emerald-500";
+                    } else if (year > 2025) {
                         increase = 540; 
                         accumulatedIncrease += increase;
                         event = "รอบประเมิน ต.ค. (3%)";
-                        note = "ประเมินจากฐานล่าง (17,980 x 3%)";
-                        if (year === 2025) { isTimelineEvent = true; timelineColor = "bg-emerald-500"; }
+                        note = "ประเมินจากฐานล่าง (17,980 x 3%) / ป.เอก รอคำสั่ง";
                     }
+                }
+
+                // ถ้าระยะเวลาตั้งแต่ ต.ค. 68 เป็นต้นไป ระบบจะบวกเงิน 610 เข้าในช่องรับจริง (เพราะเงินตกเบิกส่วนนี้เข้าแล้ว)
+                if (year > 2025 || (year === 2025 && month >= 9)) {
+                    rowActualReceived += 610;
                 }
 
                 // กำหนดฐานที่ควรได้ (ป.ตรี และ ป.เอก) ตามช่วงเวลา
@@ -383,7 +393,7 @@
                     <td class="px-3 py-2 text-right text-slate-500 font-normal">${formatTHB(totalGrossBackpay)}</td>
                 </tr>
                 <tr>
-                    <td colspan="6" class="px-3 py-2 text-right text-emerald-600 font-normal">หัก: รับเงินก้อนอื่นแล้ว (ฐาน ป.ตรี + ประเมิน เม.ย.):</td>
+                    <td colspan="6" class="px-3 py-2 text-right text-emerald-600 font-normal">หัก: รับเงินก้อนอื่นแล้ว (ฐาน ป.ตรี + ประเมิน เม.ย. 68 + ต.ค. 68):</td>
                     <td class="px-3 py-2 text-right text-emerald-600 font-normal">-${formatTHB(totalAlreadyReceived)}</td>
                 </tr>
                 <tr class="border-t border-slate-200">
