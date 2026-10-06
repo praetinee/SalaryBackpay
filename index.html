@@ -256,18 +256,29 @@
                         note = "ประเมินจากฐานล่าง (ได้ 3.31000% คิดเป็นเงิน 600 บาท) / ป.เอก รอคำสั่ง";
                         isTimelineEvent = true;
                         timelineColor = "bg-blue-500";
-                    } else if (year > 2025) {
+                    } else if (year === 2026) {
+                        increase = 610; 
+                        accumulatedIncrease += increase;
+                        event = "รอบประเมิน เม.ย. (3.35000%)";
+                        note = "ประเมินจากฐานล่าง (ได้ 3.35000% คิดเป็นเงิน 610 บาท) / ป.เอก รอคำสั่ง";
+                        isTimelineEvent = true; 
+                        timelineColor = "bg-indigo-500";
+                    } else if (year > 2026) {
                         increase = 540; 
                         accumulatedIncrease += increase;
                         event = "รอบประเมิน เม.ย. (3%)";
-                        note = "ประเมินจากฐานล่าง (17,980 x 3%) / ป.เอก รอคำสั่ง";
-                        if (year === 2026) { isTimelineEvent = true; timelineColor = "bg-indigo-500"; }
+                        note = "ประเมินจากฐานล่าง (คิด 3%) / ป.เอก รอคำสั่ง";
                     }
                 }
                 
                 // ถ้าระยะเวลาตั้งแต่ เม.ย. 68 เป็นต้นไป ระบบจะบวกเงิน 600 เข้าในช่องรับจริง (เพราะได้ครบแล้ว)
                 if (year > 2025 || (year === 2025 && month >= 3)) {
                     rowActualReceived += 600;
+                }
+
+                // ถ้าระยะเวลาตั้งแต่ เม.ย. 69 เป็นต้นไป ระบบจะบวกเงิน 610 เข้าในช่องรับจริง
+                if (year > 2026 || (year === 2026 && month >= 3)) {
+                    rowActualReceived += 610;
                 }
                 
                 if (month === 9) { // Oct
@@ -393,7 +404,7 @@
                     <td class="px-3 py-2 text-right text-slate-500 font-normal">${formatTHB(totalGrossBackpay)}</td>
                 </tr>
                 <tr>
-                    <td colspan="6" class="px-3 py-2 text-right text-emerald-600 font-normal">หัก: รับเงินก้อนอื่นแล้ว (ฐาน ป.ตรี + ประเมิน เม.ย. 68 + ต.ค. 68):</td>
+                    <td colspan="6" class="px-3 py-2 text-right text-emerald-600 font-normal">หัก: รับเงินก้อนอื่นแล้ว (ฐาน ป.ตรี + ประเมิน เม.ย. 68 + ต.ค. 68 + เม.ย. 69):</td>
                     <td class="px-3 py-2 text-right text-emerald-600 font-normal">-${formatTHB(totalAlreadyReceived)}</td>
                 </tr>
                 <tr class="border-t border-slate-200">
