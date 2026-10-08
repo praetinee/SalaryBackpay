@@ -119,7 +119,7 @@
             <div class="bg-gradient-to-br from-emerald-50 to-white p-6 rounded-xl shadow-sm border border-emerald-100 card-hover">
                 <div class="text-sm font-medium text-emerald-600 mb-1">ยอดตกเบิกคงเหลือ (ยังไม่ได้รับ)</div>
                 <div class="text-4xl font-bold text-emerald-700" id="netBackpayDisplay">...</div>
-                <div class="text-xs text-emerald-600 mt-2 bg-rose-50/80 p-2 rounded leading-relaxed hidden border border-rose-100" id="backpayBreakdownDisplay"></div>
+                <div class="text-xs mt-2 bg-white/60 p-2 rounded leading-relaxed border border-emerald-100/50" id="backpayBreakdownDisplay">กำลังคำนวณ...</div>
             </div>
 
             <!-- Current Gap -->
@@ -228,7 +228,7 @@
             
             let accumulatedIncreaseGov = 0; 
             let accumulatedIncreasePhd = 0; 
-            const phdEvalBase = 23930; // ฐานคำนวณ ป.เอก คงที่
+            const phdEvalBase = 23930; 
             
             while (currentDate <= endDate) {
                 const year = currentDate.getFullYear();
@@ -243,28 +243,24 @@
                 let isTimelineEvent = false;
                 let timelineColor = "";
 
-                // ตัวแปรเก็บรับจริง (เริ่มต้นที่ฐานเก่า 16,500)
                 let rowActualReceived = 16500;
 
-                // --- 1. Base Adjustment Rule (May 2025) ---
-                if (year === 2025 && month === 4) { // May 2025
-                    increase = 25410 - 23100; // ส่วนต่างฐาน ป.เอก ที่ขยับขึ้น
+                if (year === 2025 && month === 4) { 
+                    increase = 25410 - 23100; 
                     event = "นโยบายปรับฐานรัฐบาล (พ.ค. 68)";
                     note = "ปรับฐาน ป.ตรี ได้แล้ว (+1,650/ด.) / ป.เอก รอคำสั่ง";
                     isTimelineEvent = true;
                     timelineColor = "bg-amber-500";
                 }
                 
-                // ถ้าระยะเวลาตั้งแต่ พ.ค. 68 เป็นต้นไป ระบบจะบวกเงิน 1,650 เข้าในช่องรับจริง
                 if (year > 2025 || (year === 2025 && month >= 4)) {
                     rowActualReceived += 1650;
                 }
 
-                // --- 2. Evaluation Rules (Apr & Oct) ---
-                if (month === 3) { // Apr
+                if (month === 3) { 
                     if (year === 2025) {
                         let incGov = 600;
-                        let incPhd = Math.ceil((phdEvalBase * 0.0331) / 10) * 10; // 800
+                        let incPhd = Math.ceil((phdEvalBase * 0.0331) / 10) * 10; 
                         accumulatedIncreaseGov += incGov;
                         accumulatedIncreasePhd += incPhd;
                         increase = incPhd;
@@ -274,7 +270,7 @@
                         timelineColor = "bg-blue-500";
                     } else if (year === 2026) {
                         let incGov = 610;
-                        let incPhd = Math.ceil((phdEvalBase * 0.0335) / 10) * 10; // 810
+                        let incPhd = Math.ceil((phdEvalBase * 0.0335) / 10) * 10; 
                         accumulatedIncreaseGov += incGov;
                         accumulatedIncreasePhd += incPhd;
                         increase = incPhd;
@@ -284,7 +280,7 @@
                         timelineColor = "bg-indigo-500";
                     } else if (year > 2026) {
                         let incGov = 540;
-                        let incPhd = Math.ceil((phdEvalBase * 0.03) / 10) * 10; // 720
+                        let incPhd = Math.ceil((phdEvalBase * 0.03) / 10) * 10; 
                         accumulatedIncreaseGov += incGov;
                         accumulatedIncreasePhd += incPhd;
                         increase = incPhd;
@@ -293,17 +289,15 @@
                     }
                 }
                 
-                // ถ้าระยะเวลาตั้งแต่ เม.ย. 68 เป็นต้นไป ระบบจะบวกเงิน 600 เข้าในช่องรับจริง
                 if (year > 2025 || (year === 2025 && month >= 3)) {
                     rowActualReceived += 600;
                 }
 
-                // ถ้าระยะเวลาตั้งแต่ เม.ย. 69 เป็นต้นไป ระบบจะบวกเงิน 610 เข้าในช่องรับจริง
                 if (year > 2026 || (year === 2026 && month >= 3)) {
                     rowActualReceived += 610;
                 }
                 
-                if (month === 9) { // Oct
+                if (month === 9) { 
                     if (year === 2024) {
                         event = "รอบประเมิน ต.ค. (ไม่ได้เลื่อน)";
                         note = "อายุงานไม่ถึง 4 เดือน";
@@ -311,7 +305,7 @@
                         timelineColor = "bg-slate-400";
                     } else if (year === 2025) {
                         let incGov = 610;
-                        let incPhd = Math.ceil((phdEvalBase * 0.0339) / 10) * 10; // 820
+                        let incPhd = Math.ceil((phdEvalBase * 0.0339) / 10) * 10; 
                         accumulatedIncreaseGov += incGov;
                         accumulatedIncreasePhd += incPhd;
                         increase = incPhd;
@@ -321,7 +315,7 @@
                         timelineColor = "bg-emerald-500";
                     } else if (year > 2025) {
                         let incGov = 540;
-                        let incPhd = Math.ceil((phdEvalBase * 0.03) / 10) * 10; // 720
+                        let incPhd = Math.ceil((phdEvalBase * 0.03) / 10) * 10; 
                         accumulatedIncreaseGov += incGov;
                         accumulatedIncreasePhd += incPhd;
                         increase = incPhd;
@@ -330,25 +324,21 @@
                     }
                 }
 
-                // ถ้าระยะเวลาตั้งแต่ ต.ค. 68 เป็นต้นไป ระบบจะบวกเงิน 610 เข้าในช่องรับจริง
                 if (year > 2025 || (year === 2025 && month >= 9)) {
                     rowActualReceived += 610;
                 }
 
-                // กำหนดฐานที่ควรได้ (ป.ตรี และ ป.เอก) ตามช่วงเวลา
                 let currentGovBase = (year > 2025 || (year === 2025 && month >= 4)) ? 18150 : 16500;
                 let currentPhdBase = (year > 2025 || (year === 2025 && month >= 4)) ? 25410 : 23100;
 
                 let expectedGov = currentGovBase + accumulatedIncreaseGov;
                 let expectedPhd = currentPhdBase + accumulatedIncreasePhd;
                 
-                // สูตรคำนวณการตกเบิกอย่างตรงไปตรงมา
                 let grossBackpay = expectedPhd - 16500; 
                 let alreadyReceivedThisMonth = rowActualReceived - 16500; 
                 let netBackpay = expectedPhd - rowActualReceived; 
 
-                // First Month Logic (Prorated - หารเฉลี่ยตามวัน)
-                if (year === 2024 && month === 7) { // Aug 2024
+                if (year === 2024 && month === 7) { 
                     const daysInMonth = 31;
                     
                     expectedGov = (16500 / daysInMonth) * 23;
@@ -380,7 +370,7 @@
                     increase,
                     grossBackpay,
                     alreadyReceivedThisMonth,
-                    netBackpay, // Base Net Backpay BEFORE GPF
+                    netBackpay,
                     isFuture,
                     isTimelineEvent,
                     timelineColor,
@@ -404,7 +394,6 @@
                     dateDisplay.innerText = `ข้อมูล ณ วันที่: ${today.getDate()} ${getThaiMonth(today.getMonth())} ${today.getFullYear()+543}`;
                 }
 
-                // Event Listener สำหรับ Checkbox กบข.
                 const gpfCheckbox = document.getElementById('gpfCheckbox');
                 if(gpfCheckbox) {
                     gpfCheckbox.addEventListener('change', (e) => {
@@ -437,9 +426,9 @@
 
             const currentData = data.filter(d => !d.isFuture);
             
+            const totalAlreadyReceived = currentData.reduce((sum, item) => sum + item.alreadyReceivedThisMonth, 0);
             const totalNetBackpayBeforeGpf = currentData.reduce((sum, item) => sum + item.netBackpay, 0);
             
-            // คำนวณยอด กบข. ถ้ามีการติ๊ก Checkbox
             const totalGpfDeduction = isGpfDeducted ? currentData.reduce((sum, item) => sum + (item.netBackpay * 0.03), 0) : 0;
             const finalTotalNetBackpay = totalNetBackpayBeforeGpf - totalGpfDeduction;
             
@@ -448,30 +437,31 @@
             const lastGpfAmount = isGpfDeducted ? (lastNetBackpayBeforeGpf * 0.03) : 0;
             const finalLastNetBackpay = lastNetBackpayBeforeGpf - lastGpfAmount;
 
-            // อัปเดตตัวเลขหน้า Dashboard
             document.getElementById('netBackpayDisplay').innerText = formatTHB(finalTotalNetBackpay).replace('฿', '');
             
-            // จัดการกล่อง Breakdown ด้านล่างตัวเลข
             const breakdownEl = document.getElementById('backpayBreakdownDisplay');
+            let breakdownHtml = `<span class="text-emerald-700">หักรับเงินส่วนอื่นแล้ว: <strong>${formatTHB(totalAlreadyReceived)}</strong></span>`;
+            
             if (isGpfDeducted && totalGpfDeduction > 0) {
-                breakdownEl.innerHTML = `<span class="text-rose-600">หักนำส่ง กบข. 3% <strong>-${formatTHB(totalGpfDeduction)}</strong></span>`;
-                breakdownEl.classList.remove('hidden');
-            } else {
-                breakdownEl.classList.add('hidden');
+                breakdownHtml += `<br><span class="text-rose-600 mt-1.5 inline-block">หักนำส่ง กบข. 3%: <strong>-${formatTHB(totalGpfDeduction)}</strong></span>`;
             }
+            breakdownEl.innerHTML = breakdownHtml;
             
             document.getElementById('currentGapDisplay').innerText = formatTHB(finalLastNetBackpay).replace('฿', '');
             document.getElementById('currentSalaryDisplay').innerText = formatTHB(lastRecord.expectedPhd).replace('฿', '');
             
-            // อัปเดตตารางสรุปส่วนท้าย
-            let footerHtml = '';
+            let footerHtml = `
+                <tr>
+                    <td colspan="6" class="px-3 py-2 text-right text-slate-500 font-normal">(ข้อมูล) รวมรับเงินส่วนอื่นไปแล้ว:</td>
+                    <td class="px-3 py-2 text-right text-slate-500 font-normal">${formatTHB(totalAlreadyReceived)}</td>
+                </tr>
+                <tr>
+                    <td colspan="6" class="px-3 py-2 text-right text-slate-700 font-bold">รวมยอดตกเบิกสะสม (ก่อนหัก กบข.):</td>
+                    <td class="px-3 py-2 text-right text-slate-700 font-bold">${formatTHB(totalNetBackpayBeforeGpf)}</td>
+                </tr>`;
             
             if (isGpfDeducted) {
                 footerHtml += `
-                <tr>
-                    <td colspan="6" class="px-3 py-2 text-right text-slate-500 font-normal">ยอดตกเบิกสะสม (สุทธิก่อนหัก กบข.):</td>
-                    <td class="px-3 py-2 text-right text-slate-500 font-normal">${formatTHB(totalNetBackpayBeforeGpf)}</td>
-                </tr>
                 <tr>
                     <td colspan="6" class="px-3 py-2 text-right text-rose-500 font-normal border-t border-slate-100">หัก: นำส่ง กบข. 3% (เฉพาะส่วนตกเบิก):</td>
                     <td class="px-3 py-2 text-right text-rose-500 font-normal border-t border-slate-100">-${formatTHB(totalGpfDeduction)}</td>
@@ -588,7 +578,6 @@
                     increaseHtml = `<span class="text-amber-500 font-bold">ปรับฐาน</span>`;
                 }
 
-                // คำนวณหัก กบข. รายเดือนสำหรับการแสดงผลในตาราง
                 let finalNetForThisMonth = row.netBackpay;
                 let gpfDeductedAmount = 0;
                 
